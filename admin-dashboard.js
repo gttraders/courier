@@ -1,23 +1,35 @@
-// Admin Dashboard JavaScript
+// Admin Dashboard JavaScript - Enhanced Version
 let currentSection = 'dashboard';
+let currentSelfieId = null;
+let sortDirection = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
     loadRecentActivities();
     loadAgents();
     loadCouriers();
+    loadDeliverySelfies();
     setupEventListeners();
+    
+    // Add mobile menu button if needed
+    if (window.innerWidth <= 768) {
+        addMobileMenuButton();
+    }
 });
 
 function initializeDashboard() {
-    // Show dashboard section by default
     showSection('dashboard');
-    
-    // Setup form submissions
     setupFormSubmissions();
-    
-    // Load reports data
     loadReports();
+}
+
+function addMobileMenuButton() {
+    const header = document.querySelector('.dashboard-header');
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+    menuBtn.className = 'mobile-menu-btn';
+    menuBtn.onclick = toggleSidebar;
+    header.insertBefore(menuBtn, header.firstChild);
 }
 
 function setupEventListeners() {
@@ -35,7 +47,6 @@ function setupEventListeners() {
 }
 
 function setupFormSubmissions() {
-    // Prevent form submissions from refreshing the page
     document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -45,15 +56,12 @@ function setupFormSubmissions() {
 
 // Navigation
 function showSection(sectionId) {
-    // Hide all sections
     document.querySelectorAll('.dashboard-section').forEach(section => {
         section.classList.remove('active');
     });
     
-    // Show selected section
     document.getElementById(sectionId).classList.add('active');
     
-    // Update active nav link
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
@@ -62,13 +70,15 @@ function showSection(sectionId) {
     
     currentSection = sectionId;
     
-    // Load section-specific data
     switch(sectionId) {
         case 'agents':
             loadAgents();
             break;
         case 'couriers':
             loadCouriers();
+            break;
+        case 'delivery-selfies':
+            loadDeliverySelfies();
             break;
         case 'reports':
             loadReports();
@@ -199,7 +209,20 @@ async function deleteAgent(agentId) {
 // Courier Management
 async function loadCouriers() {
     try {
-        const response = await fetch('api/couriers.php');
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+        const dateFilter = document.getElementById('dateFilter')?.value || '';
+        
+        let url = 'api/couriers.php';
+        const params = new URLSearchParams();
+        
+        if (statusFilter) params.append('status', statusFilter);
+        if (dateFilter) params.append('date', dateFilter);
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+        
+        const response = await fetch(url);
         const couriers = await response.json();
         
         const tbody = document.getElementById('couriersTableBody');
@@ -209,10 +232,11 @@ async function loadCouriers() {
                 <td>${courier.party_name}</td>
                 <td>${courier.from_city}</td>
                 <td>${courier.to_city}</td>
-                <td>₹${courier.amount}</td>
+                <td>₹${parseFloat(courier.amount).toLocaleString()}</td>
                 <td><span class="status-badge ${courier.status}">${courier.status}</span></td>
-                <td>${courier.agent_id || 'N/A'}</td>
+                <td>${courier.agent_name || 'N/A'}</td>
                 <td>${new Date(courier.created_at).toLocaleDateString()}</td>
+                <td>${courier.remarks || 'N/A'}</td>
                 <td>
                     ${courier.delivery_person ? `
                         <div class="delivery-info">
@@ -244,11 +268,7 @@ async function loadCouriers() {
 }
 
 function filterCouriers() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const dateFilter = document.getElementById('dateFilter').value;
-    
-    // Implement filtering logic
-    loadCouriers(); // For now, just reload all couriers
+    loadCouriers();
 }
 
 async function exportCouriers() {
@@ -268,9 +288,36 @@ async function exportCouriers() {
     }
 }
 
-// Table sorting functionality
-let sortDirection = {};
+async function exportCouriersToTxt() {
+    try {
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+        const dateFilter = document.getElementById('dateFilter')?.value || '';
+        
+        let url = 'api/export-text.php';
+        const params = new URLSearchParams();
+        
+        if (statusFilter) params.append('status', statusFilter);
+        if (dateFilter) params.append('date', dateFilter);
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `couriers_${new Date().toISOString().split('T')[0]}.txt`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        showAlert('Text export started! File will download shortly.', 'success');
+    } catch (error) {
+        showAlert('Failed to export data. Please try again.', 'error');
+    }
+}
 
+// Table sorting functionality
 function sortTable(columnIndex) {
     const table = document.getElementById('couriersTable');
     const tbody = table.querySelector('tbody');
@@ -285,8 +332,8 @@ function sortTable(columnIndex) {
         
         // Handle numeric values
         if (columnIndex === 4) { // Amount column
-            const aNum = parseFloat(aValue.replace('₹', ''));
-            const bNum = parseFloat(bValue.replace('₹', ''));
+            const aNum = parseFloat(aValue.replace('₹', '').replace(',', ''));
+            const bNum = parseFloat(bValue.replace('₹', '').replace(',', ''));
             return isAscending ? aNum - bNum : bNum - aNum;
         }
         
@@ -353,6 +400,78 @@ async function deleteDeliveryPhoto(courierId) {
         showAlert('Failed to delete photo. Please try again.', 'error');
     }
 }
+
+// Delivery Selfies Management
+async function loadDeliverySelfies() {
+    try {
+        const response = await fetch('api/delivery-selfies.php');
+        const selfies = await response.json();
+        
+        const container = document.getElementById('deliverySelfiesGrid');
+        
+        if (selfies.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #6b46c1;">No delivery selfies uploaded yet.</p>';
+            return;
+        }
+        
+        container.innerHTML = selfies.map(selfie => `
+            <div class="selfie-card" style="background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 1rem; box-shadow: 0 5px 15px rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.1);">
+                <img src="${selfie.image_path}" alt="Delivery Selfie" 
+                     style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; cursor: pointer;"
+                     onclick="viewSelfie('${selfie.id}', '${selfie.image_path}', '${selfie.courier_id}')">
+                <div style="margin-top: 1rem;">
+                    <h4 style="color: #2d1b69; margin: 0.5rem 0;">Courier: ${selfie.courier_id}</h4>
+                    <p style="color: #6b46c1; margin: 0.25rem 0; font-size: 0.9rem;">Agent: ${selfie.agent_name}</p>
+                    <p style="color: #a855f7; margin: 0.25rem 0; font-size: 0.85rem;">${new Date(selfie.uploaded_at).toLocaleDateString()}</p>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add CSS for selfies grid
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+        container.style.gap = '1.5rem';
+        container.style.padding = '1rem';
+    } catch (error) {
+        console.error('Failed to load delivery selfies:', error);
+        document.getElementById('deliverySelfiesGrid').innerHTML = '<p style="text-align: center; color: #ef4444;">Failed to load delivery selfies.</p>';
+    }
+}
+
+function viewSelfie(selfieId, imagePath, courierId) {
+    currentSelfieId = selfieId;
+    document.getElementById('selfieModalTitle').textContent = `Delivery Selfie - ${courierId}`;
+    document.getElementById('selfieModalImage').src = imagePath;
+    document.getElementById('selfieModal').style.display = 'block';
+}
+
+async function deleteSelfie() {
+    if (!currentSelfieId) return;
+    
+    if (!confirm('Are you sure you want to delete this delivery selfie?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`api/delivery-selfies.php?id=${currentSelfieId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Delivery selfie deleted successfully!', 'success');
+            closeModal('selfieModal');
+            loadDeliverySelfies();
+            currentSelfieId = null;
+        } else {
+            showAlert(result.message, 'error');
+        }
+    } catch (error) {
+        showAlert('Failed to delete selfie. Please try again.', 'error');
+    }
+}
+
 // Settings
 async function handleChangePassword(e) {
     e.preventDefault();
@@ -365,10 +484,6 @@ async function handleChangePassword(e) {
         showAlert('New passwords do not match!', 'error');
         return;
     }
-    
-    const passwordData = {
-        new_password: newPassword
-    };
     
     try {
         const response = await fetch('api/admin-profile.php', {
@@ -436,6 +551,7 @@ async function loadReports() {
         }
     } catch (error) {
         console.error('Failed to load reports:', error);
+        showAlert('Failed to load reports data.', 'error');
     }
 }
 
@@ -446,7 +562,7 @@ function createRevenueChart(monthlyData) {
     chartContainer.innerHTML = monthlyData.map(item => {
         const height = maxRevenue > 0 ? (parseFloat(item.revenue) / maxRevenue) * 200 : 0;
         return `
-            <div class="chart-bar" style="height: ${height}px; background: #3b82f6; margin: 5px; padding: 5px; border-radius: 4px; color: white; font-size: 12px; display: inline-block; width: 60px; text-align: center;">
+            <div class="chart-bar" style="height: ${height}px; background: linear-gradient(135deg, #7c3aed, #a855f7); margin: 5px; padding: 5px; border-radius: 4px; color: white; font-size: 12px; display: inline-block; width: 60px; text-align: center;">
                 <div>${item.month}</div>
                 <div>₹${parseFloat(item.revenue).toLocaleString()}</div>
             </div>
@@ -461,7 +577,7 @@ function createAgentChart(agentData) {
     chartContainer.innerHTML = agentData.map(agent => {
         const height = maxBusiness > 0 ? (parseFloat(agent.total_business) / maxBusiness) * 200 : 0;
         return `
-            <div class="chart-bar" style="height: ${height}px; background: #10b981; margin: 5px; padding: 5px; border-radius: 4px; color: white; font-size: 12px; display: inline-block; width: 80px; text-align: center;">
+            <div class="chart-bar" style="height: ${height}px; background: linear-gradient(135deg, #10b981, #059669); margin: 5px; padding: 5px; border-radius: 4px; color: white; font-size: 12px; display: inline-block; width: 80px; text-align: center;">
                 <div>${agent.agent_name}</div>
                 <div>₹${parseFloat(agent.total_business).toLocaleString()}</div>
             </div>
@@ -477,6 +593,7 @@ async function loadAdminProfile() {
         
         if (result.success) {
             document.getElementById('admin_username').value = result.data.username;
+            document.getElementById('profile_username').value = result.data.username;
         }
     } catch (error) {
         console.error('Failed to load admin profile:', error);
@@ -517,7 +634,6 @@ async function handleAdminProfileUpdate(e) {
 
 // Edit Agent
 function editAgent(agentId) {
-    // Load agent data and show edit modal
     fetch(`api/agents.php?id=${agentId}`)
         .then(response => response.json())
         .then(agent => {
@@ -612,7 +728,6 @@ function openUpdateCourierModal() {
 }
 
 function viewCourier(courierId) {
-    // Fill the update form with courier ID
     document.getElementById('courier_id_update').value = courierId;
     openUpdateCourierModal();
 }
@@ -620,17 +735,17 @@ function viewCourier(courierId) {
 // Enhanced mobile sidebar toggle
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
+    let overlay = document.querySelector('.sidebar-overlay');
     
     if (!overlay) {
-        const newOverlay = document.createElement('div');
-        newOverlay.className = 'sidebar-overlay';
-        newOverlay.onclick = toggleSidebar;
-        document.body.appendChild(newOverlay);
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = toggleSidebar;
+        document.body.appendChild(overlay);
     }
     
     sidebar.classList.toggle('active');
-    document.querySelector('.sidebar-overlay').classList.toggle('active');
+    overlay.classList.toggle('active');
 }
 
 // Utility Functions
@@ -644,11 +759,14 @@ function showAlert(message, type) {
     
     setTimeout(() => {
         alertDiv.remove();
-    }, 3000);
+    }, 5000);
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+    if (modalId === 'selfieModal') {
+        currentSelfieId = null;
+    }
 }
 
 function logout() {
@@ -659,6 +777,10 @@ function logout() {
                 if (data.success) {
                     window.location.href = 'index.php';
                 }
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                window.location.href = 'index.php';
             });
     }
 }
@@ -669,22 +791,19 @@ window.addEventListener('click', function(event) {
     modals.forEach(modal => {
         if (event.target === modal) {
             modal.style.display = 'none';
+            if (modal.id === 'selfieModal') {
+                currentSelfieId = null;
+            }
         }
     });
 });
 
-// Mobile sidebar toggle
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('active');
-}
-
-// Add mobile menu button if needed
-if (window.innerWidth <= 768) {
-    const header = document.querySelector('.dashboard-header');
-    const menuBtn = document.createElement('button');
-    menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
-    menuBtn.className = 'mobile-menu-btn';
-    menuBtn.onclick = toggleSidebar;
-    header.insertBefore(menuBtn, header.firstChild);
-}
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+    }
+});

@@ -26,13 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Check if file was uploaded
     if (!isset($_FILES['delivery_photo']) || $_FILES['delivery_photo']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'message' => 'Please upload a delivery photo']);
+        echo json_encode(['success' => false, 'message' => 'Please upload a delivery selfie']);
         exit;
     }
     
     $file = $_FILES['delivery_photo'];
     $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    $max_size = 5 * 1024 * 1024; // 5MB
+    $max_size = 500 * 1024; // 500KB
     
     // Validate file type
     if (!in_array($file['type'], $allowed_types)) {
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Validate file size
     if ($file['size'] > $max_size) {
-        echo json_encode(['success' => false, 'message' => 'File size must be less than 5MB']);
+        echo json_encode(['success' => false, 'message' => 'File size must be less than 500KB']);
         exit;
     }
     
@@ -67,11 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Add tracking entry
             $updated_by = isAdminLoggedIn() ? 'admin' : $_SESSION['agent_agent_id'];
             $stmt = $pdo->prepare("INSERT INTO tracking (courier_id, location, status, updated_by) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$courier_id, 'Delivered', 'Package delivered with photo proof', $updated_by]);
+            $stmt->execute([$courier_id, 'Delivered', 'Package delivered with selfie proof', $updated_by]);
             
             echo json_encode([
                 'success' => true, 
-                'message' => 'Delivery photo uploaded successfully',
+                'message' => 'Delivery selfie uploaded successfully',
                 'filename' => $filename
             ]);
         } else {

@@ -79,6 +79,9 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                     <button class="btn btn-primary" onclick="window.open('index.php', '_blank')">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </button>
+                    <button onclick="logout()" class="header-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </header>
 
@@ -144,31 +147,38 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
             <section id="add-courier" class="dashboard-section">
                 <div class="section-header">
                     <h2>Add New Courier</h2>
+                    <button class="btn btn-success" onclick="downloadReceipt()" id="downloadReceiptBtn" style="display: none;">
+                        <i class="fas fa-download"></i> Download Receipt
+                    </button>
                 </div>
                 <div class="form-container">
                     <form id="addCourierForm" class="courier-form">
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="party_name">Party Name *</label>
-                                <input type="text" id="party_name" name="party_name" required>
+                                <label for="to_party_name">To Party Name *</label>
+                                <input type="text" id="to_party_name" name="to_party_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="from_party_name">From Party Name *</label>
+                                <input type="text" id="from_party_name" name="from_party_name" required>
                             </div>
                             <div class="form-group">
                                 <label for="mobile">Mobile Number *</label>
                                 <input type="tel" id="mobile" name="mobile" required>
                             </div>
                             <div class="form-group full-width">
-                                <label for="address">Address *</label>
+                                <label for="address">From Address *</label>
                                 <textarea id="address" name="address" rows="3" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="from_city">From City *</label>
-                                <select id="from_city" name="from_city" required>
-                                    <option value="">Select City</option>
-                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="to_city">To City *</label>
                                 <select id="to_city" name="to_city" required>
+                                    <option value="">Select City</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="from_city">From City *</label>
+                                <select id="from_city" name="from_city" required>
                                     <option value="">Select City</option>
                                 </select>
                             </div>
@@ -181,7 +191,7 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                                 <input type="date" id="delivery_date" name="delivery_date">
                             </div>
                             <div class="form-group full-width">
-                                <label for="remarks">Remarks</label>
+                                <label for="remarks">Remarks (if any)</label>
                                 <textarea id="remarks" name="remarks" rows="2"></textarea>
                             </div>
                         </div>
@@ -204,6 +214,9 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                             <option value="delivered">Delivered</option>
                         </select>
                         <input type="date" id="dateFilter" onchange="filterMyCouriers()">
+                        <button class="export-btn" onclick="exportMyData()">
+                            <i class="fas fa-file-alt"></i> Export to Notepad
+                        </button>
                     </div>
                 </div>
                 <div class="couriers-table-container">
@@ -211,7 +224,8 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                         <thead>
                             <tr>
                                 <th>Courier ID</th>
-                                <th>Party Name</th>
+                                <th>To Party Name</th>
+                                <th>From Party Name</th>
                                 <th>Mobile</th>
                                 <th>From</th>
                                 <th>To</th>
@@ -269,8 +283,9 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                                 <input type="text" id="delivery_person" name="delivery_person">
                             </div>
                             <div class="form-group delivery-section" id="photoSection" style="display: none;">
-                                <label for="delivery_photo">Delivery Photo *</label>
+                                <label for="delivery_photo">Upload Selfie with Customer * (Max 500KB)</label>
                                 <input type="file" id="delivery_photo" name="delivery_photo" accept="image/*">
+                                <small style="color: #6b46c1;">Upload a selfie with the customer when marking as delivered</small>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">

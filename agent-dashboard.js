@@ -1,17 +1,32 @@
-// Agent Dashboard JavaScript
+// Agent Dashboard JavaScript - Enhanced Version
 let currentSection = 'dashboard';
 let cities = [];
+let lastCourierId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
     loadCities();
     loadRecentCouriers();
     setupEventListeners();
+    
+    // Add mobile menu button if needed
+    if (window.innerWidth <= 768) {
+        addMobileMenuButton();
+    }
 });
 
 function initializeDashboard() {
     showSection('dashboard');
     setupFormSubmissions();
+}
+
+function addMobileMenuButton() {
+    const header = document.querySelector('.dashboard-header');
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+    menuBtn.className = 'mobile-menu-btn';
+    menuBtn.onclick = toggleSidebar;
+    header.insertBefore(menuBtn, header.firstChild);
 }
 
 function setupEventListeners() {
@@ -166,14 +181,17 @@ async function handleAddCourier(e) {
     
     const formData = new FormData(e.target);
     
-    // Generate courier ID based on party name
-    const partyName = formData.get('party_name');
+    // Get city values from searchable inputs
+    const fromCityInput = document.querySelector('#from_city').closest('.searchable-select')?.querySelector('.city-search-input');
+    const toCityInput = document.querySelector('#to_city').closest('.searchable-select')?.querySelector('.city-search-input');
+    
     const courierData = {
-        party_name: partyName,
+        to_party_name: formData.get('to_party_name'),
+        from_party_name: formData.get('from_party_name'),
         mobile: formData.get('mobile'),
         address: formData.get('address'),
-        from_city: formData.get('from_city'),
-        to_city: formData.get('to_city'),
+        from_city: fromCityInput ? fromCityInput.value : formData.get('from_city'),
+        to_city: toCityInput ? toCityInput.value : formData.get('to_city'),
         amount: formData.get('amount') || 0,
         delivery_date: formData.get('delivery_date'),
         remarks: formData.get('remarks')
@@ -192,10 +210,17 @@ async function handleAddCourier(e) {
         
         if (result.success) {
             showAlert('Courier added successfully! Courier ID: ' + result.courier_id, 'success');
+            lastCourierId = result.courier_id;
+            
+            // Show download receipt button
+            const downloadBtn = document.getElementById('downloadReceiptBtn');
+            downloadBtn.style.display = 'inline-flex';
+            
             e.target.reset();
             
-            // Show receipt download button
-            showReceiptOption(result.courier_id);
+            // Reset city search inputs
+            if (fromCityInput) fromCityInput.value = '';
+            if (toCityInput) toCityInput.value = '';
             
             loadRecentCouriers();
         } else {
@@ -206,35 +231,22 @@ async function handleAddCourier(e) {
     }
 }
 
-function showReceiptOption(courierId) {
-    const receiptDiv = document.createElement('div');
-    receiptDiv.className = 'receipt-option';
-    receiptDiv.innerHTML = `
-        <div class="alert success">
-            <p>Courier added successfully! Courier ID: ${courierId}</p>
-            <button class="btn btn-primary" onclick="downloadReceipt('${courierId}')">
-                <i class="fas fa-download"></i> Download Receipt
-            </button>
-        </div>
-    `;
+function downloadReceipt() {
+    if (!lastCourierId) {
+        showAlert('No recent courier to download receipt for.', 'error');
+        return;
+    }
     
-    const form = document.getElementById('addCourierForm');
-    form.parentNode.insertBefore(receiptDiv, form.nextSibling);
-    
-    setTimeout(() => {
-        receiptDiv.remove();
-    }, 10000);
-}
-
-function downloadReceipt(courierId) {
-    const url = `api/generate-receipt.php?courier_id=${courierId}`;
+    const url = `api/generate-receipt.php?courier_id=${lastCourierId}`;
     const a = document.createElement('a');
     a.href = url;
-    a.download = `receipt_${courierId}.txt`;
+    a.download = `receipt_${lastCourierId}.txt`;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    
+    showAlert('Receipt download started!', 'success');
 }
 
 // Load Recent Couriers
@@ -252,7 +264,8 @@ async function loadRecentCouriers() {
         container.innerHTML = couriers.map(courier => `
             <div class="activity-item">
                 <h4>Courier ID: ${courier.courier_id}</h4>
-                <p><strong>Party:</strong> ${courier.party_name}</p>
+                <p><strong>To Party:</strong> ${courier.to_party_name || courier.party_name}</p>
+                <p><strong>From Party:</strong> ${courier.from_party_name || courier.party_name}</p>
                 <p><strong>Route:</strong> ${courier.from_city} → ${courier.to_city}</p>
                 <p><strong>Status:</strong> <span class="status-badge ${courier.status}">${courier.status}</span></p>
                 <p><small>${new Date(courier.created_at).toLocaleDateString()}</small></p>
@@ -273,7 +286,8 @@ async function loadMyCouriers() {
         tbody.innerHTML = couriers.map(courier => `
             <tr>
                 <td>${courier.courier_id}</td>
-                <td>${courier.party_name}</td>
+                <td>${courier.to_party_name || courier.party_name}</td>
+                <td>${courier.from_party_name || courier.party_name}</td>
                 <td>${courier.mobile}</td>
                 <td>${courier.from_city}</td>
                 <td>${courier.to_city}</td>
@@ -284,7 +298,7 @@ async function loadMyCouriers() {
                     <button class="action-btn edit" onclick="fillTrackingForm('${courier.courier_id}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn" onclick="downloadReceipt('${courier.courier_id}')" title="Download Receipt">
+                    <button class="action-btn view" onclick="downloadCourierReceipt('${courier.courier_id}')" title="Download Receipt">
                         <i class="fas fa-download"></i>
                     </button>
                 </td>
@@ -298,6 +312,19 @@ async function loadMyCouriers() {
 function fillTrackingForm(courierId) {
     document.getElementById('courier_id_track').value = courierId;
     showSection('tracking');
+}
+
+function downloadCourierReceipt(courierId) {
+    const url = `api/generate-receipt.php?courier_id=${courierId}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt_${courierId}.txt`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    showAlert('Receipt download started!', 'success');
 }
 
 // Update Tracking
@@ -331,7 +358,13 @@ async function handleUpdateTracking(e) {
         const deliveryPerson = formData.get('delivery_person');
         
         if (!photoFile || !deliveryPerson) {
-            showAlert('Delivery person name and photo are required for delivered status', 'error');
+            showAlert('Delivery person name and selfie are required for delivered status', 'error');
+            return;
+        }
+        
+        // Check file size (500KB limit)
+        if (photoFile.size > 500 * 1024) {
+            showAlert('Photo size must be less than 500KB', 'error');
             return;
         }
         
@@ -410,8 +443,23 @@ function exportMyData() {
 
 // Filter Couriers
 function filterMyCouriers() {
-    // Implement filtering logic if needed
     loadMyCouriers();
+}
+
+// Enhanced mobile sidebar toggle
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    let overlay = document.querySelector('.sidebar-overlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = toggleSidebar;
+        document.body.appendChild(overlay);
+    }
+    
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
 }
 
 // Utility Functions
@@ -436,14 +484,12 @@ function logout() {
                 if (data.success) {
                     window.location.href = 'index.php';
                 }
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                window.location.href = 'index.php';
             });
     }
-}
-
-// Mobile sidebar toggle
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('active');
 }
 
 // Add CSS for city search
@@ -454,18 +500,20 @@ const citySearchStyles = `
     
     .city-search-input {
         width: 100%;
-        padding: 0.75rem;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        border-radius: 8px;
+        padding: 1rem;
+        border: 2px solid rgba(124, 58, 237, 0.2);
+        border-radius: 10px;
         background: rgba(255, 255, 255, 0.9);
-        color: #1f2937;
-        transition: all 0.2s ease;
+        color: #2d1b69;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
     }
     
     .city-search-input:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
     
     .city-dropdown {
@@ -476,24 +524,26 @@ const citySearchStyles = `
         z-index: 1000;
         max-height: 200px;
         overflow-y: auto;
-        border: 2px solid rgba(102, 126, 234, 0.2);
+        border: 2px solid rgba(124, 58, 237, 0.2);
         border-top: none;
-        border-radius: 0 0 8px 8px;
+        border-radius: 0 0 10px 10px;
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.1);
     }
     
     .city-option {
         padding: 0.75rem;
         cursor: pointer;
-        border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-        color: #1f2937;
+        border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+        color: #2d1b69;
         transition: background-color 0.2s ease;
+        font-weight: 500;
     }
     
     .city-option:hover {
-        background: rgba(102, 126, 234, 0.1);
+        background: rgba(124, 58, 237, 0.1);
+        color: #7c3aed;
     }
     
     .city-option:last-child {
@@ -505,7 +555,7 @@ const citySearchStyles = `
         padding: 1rem;
         background: rgba(16, 185, 129, 0.1);
         border: 1px solid #10b981;
-        border-radius: 8px;
+        border-radius: 10px;
         backdrop-filter: blur(10px);
     }
     
@@ -517,3 +567,13 @@ const citySearchStyles = `
 const styleSheet = document.createElement('style');
 styleSheet.textContent = citySearchStyles;
 document.head.appendChild(styleSheet);
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+    }
+});

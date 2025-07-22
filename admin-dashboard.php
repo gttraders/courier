@@ -53,6 +53,9 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                     <li><a href="#couriers" class="nav-link" onclick="showSection('couriers')">
                         <i class="fas fa-box"></i> Couriers
                     </a></li>
+                    <li><a href="#delivery-selfies" class="nav-link" onclick="showSection('delivery-selfies')">
+                        <i class="fas fa-camera"></i> Delivery Selfies
+                    </a></li>
                     <li><a href="#reports" class="nav-link" onclick="showSection('reports')">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a></li>
@@ -80,6 +83,9 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="window.open('index.php', '_blank')">
                         <i class="fas fa-external-link-alt"></i> View Site
+                    </button>
+                    <button onclick="logout()" class="header-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
             </header>
@@ -185,20 +191,25 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                         <button class="btn btn-secondary" onclick="exportCouriers()">
                             <i class="fas fa-download"></i> Export Excel
                         </button>
+                        <button class="export-btn" onclick="exportCouriersToTxt()">
+                            <i class="fas fa-file-alt"></i> Export to Notepad
+                        </button>
                     </div>
                 </div>
                 <div class="couriers-table-container">
                     <table class="data-table" id="couriersTable">
                         <thead>
                             <tr>
-                                <th>Courier ID</th>
-                                <th>Party Name</th>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Agent</th>
-                                <th>Date</th>
+                                <th onclick="sortTable(0)">Courier ID <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(1)">Party Name <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(2)">From <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(3)">To <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(4)">Amount <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(5)">Status <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(6)">Agent <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(7)">Date <i class="fas fa-sort"></i></th>
+                                <th>Remarks</th>
+                                <th>Delivery Info</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -206,6 +217,18 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                             <!-- Couriers will be loaded here -->
                         </tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- Delivery Selfies Section -->
+            <section id="delivery-selfies" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Delivery Selfies</h2>
+                </div>
+                <div class="delivery-selfies-container">
+                    <div class="selfies-grid" id="deliverySelfiesGrid">
+                        <!-- Delivery selfies will be loaded here -->
+                    </div>
                 </div>
             </section>
 
@@ -344,7 +367,7 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                         </div>
                         <div class="setting-item">
                             <label>WhatsApp Number</label>
-                            <input type="text" id="whatsappNumber" value="+919876543210">
+                            <input type="text" id="whatsappNumber" value="+917767834383">
                         </div>
                         <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
                     </div>
@@ -431,6 +454,22 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                 </select>
                 <button type="submit" class="btn btn-primary">Update</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Delivery Selfie Modal -->
+    <div id="selfieModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeModal('selfieModal')">&times;</span>
+            <h2 id="selfieModalTitle">Delivery Selfie</h2>
+            <div style="text-align: center;">
+                <img id="selfieModalImage" src="" alt="Delivery Selfie" style="max-width: 100%; border-radius: 10px;">
+            </div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <button class="btn btn-danger" onclick="deleteSelfie()">
+                    <i class="fas fa-trash"></i> Delete Selfie
+                </button>
+            </div>
         </div>
     </div>
 
