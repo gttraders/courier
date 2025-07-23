@@ -76,6 +76,9 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
             <header class="dashboard-header">
                 <h1>Welcome, <?php echo htmlspecialchars($_SESSION['agent_username']); ?></h1>
                 <div class="header-actions">
+                    <div class="realtime-indicator">
+                        <span id="currentDateTime"></span>
+                    </div>
                     <button class="btn btn-primary" onclick="window.open('index.php', '_blank')">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </button>
@@ -245,7 +248,10 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
             <!-- Tracking Section -->
             <section id="tracking" class="dashboard-section">
                 <div class="section-header">
-                    <h2>Update Courier Tracking</h2>
+                    <h2>Update Any Courier Tracking</h2>
+                    <div class="realtime-indicator">
+                        <span>Can update any courier in system</span>
+                    </div>
                 </div>
                 <div class="form-container">
                     <form id="updateTrackingForm" class="tracking-form">
@@ -289,7 +295,7 @@ $todayBusiness = $stmt->fetch()['today_business'] ?? 0;
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-update"></i> Update Tracking
+                            <i class="fas fa-edit"></i> Update Any Courier
                         </button>
                     </form>
                 </div>

@@ -7,7 +7,36 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     setupMobileMenu();
+    
+    // Add browser compatibility fixes
+    addBrowserCompatibilityFixes();
 });
+
+function addBrowserCompatibilityFixes() {
+    // Fix for older browsers
+    if (!window.fetch) {
+        console.warn('Fetch API not supported. Please use a modern browser.');
+    }
+    
+    // Fix for iOS Safari
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        document.body.style.webkitOverflowScrolling = 'touch';
+    }
+    
+    // Fix for Internet Explorer
+    if (navigator.userAgent.indexOf('MSIE') !== -1 || navigator.appVersion.indexOf('Trident/') > -1) {
+        document.body.classList.add('ie-browser');
+    }
+    
+    // Fix viewport for mobile browsers
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+        const meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(meta);
+    }
+}
 
 function initializeApp() {
     // Check if user is already logged in
@@ -55,6 +84,13 @@ function setupMobileMenu() {
         hamburger.addEventListener('click', function() {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (navMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
         });
         
         // Close menu when clicking on a link
@@ -62,7 +98,17 @@ function setupMobileMenu() {
             link.addEventListener('click', function() {
                 hamburger.classList.remove('active');
                 navMenu.classList.remove('active');
+                document.body.style.overflow = '';
             });
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
     }
 }

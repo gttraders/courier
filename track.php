@@ -27,6 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt->execute([$trackingId]);
         $tracking = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // Convert timestamps to Indian time
+        foreach ($tracking as &$track) {
+            $timestamp = new DateTime($track['timestamp']);
+            $timestamp->setTimezone(new DateTimeZone('Asia/Kolkata'));
+            $track['timestamp_ist'] = $timestamp->format('M d, Y H:i') . ' IST';
+        }
+        
         $response = [
             'success' => true,
             'data' => [
@@ -36,11 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'to_city' => $courier['to_city'],
                 'status' => $courier['status'],
                 'delivery_date' => $courier['delivery_date'] ? date('M d, Y', strtotime($courier['delivery_date'])) : 'TBD',
+                'delivery_person' => $courier['delivery_person'] ?? null,
                 'tracking_history' => array_map(function($item) {
                     return [
                         'location' => $item['location'],
                         'status' => $item['status'],
-                        'timestamp' => date('M d, Y H:i', strtotime($item['timestamp']))
+                        'timestamp' => $item['timestamp_ist']
                     ];
                 }, $tracking)
             ]

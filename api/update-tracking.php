@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
-        // Check if courier exists (agents can update any courier)
+        // Check if courier exists - agents can now update ANY courier
         $stmt = $pdo->prepare("SELECT * FROM couriers WHERE courier_id = ?");
         $stmt->execute([$courier_id]);
         $courier = $stmt->fetch();
@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$courier_status, $courier_id]);
         }
         
-        echo json_encode(['success' => true, 'message' => 'Tracking updated successfully']);
+        $user_type = isAdminLoggedIn() ? 'Admin' : 'Agent';
+        echo json_encode(['success' => true, 'message' => "Tracking updated successfully by $user_type"]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Failed to update tracking: ' . $e->getMessage()]);
     }

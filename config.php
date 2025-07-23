@@ -9,6 +9,10 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    
+    // Set timezone to Indian time
+    $pdo->exec("SET time_zone = '+05:30'");
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
 }
@@ -16,7 +20,15 @@ try {
 // Start session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
+    
+    // Set session cookie parameters for better security
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
 }
+
+// Set timezone to Indian time
+date_default_timezone_set('Asia/Kolkata');
 
 // Helper functions
 function generateCourierId($partyName) {

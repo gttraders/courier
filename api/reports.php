@@ -38,7 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 COALESCE(SUM(c.amount), 0) as total_business,
                 COUNT(CASE WHEN c.status = 'delivered' THEN 1 END) as delivered_count,
                 COUNT(CASE WHEN c.status = 'pending' THEN 1 END) as pending_count,
-                COUNT(CASE WHEN c.status = 'in_transit' THEN 1 END) as in_transit_count
+                COUNT(CASE WHEN c.status = 'in_transit' THEN 1 END) as in_transit_count,
+                MAX(c.updated_at) as last_activity
             FROM agents a 
             LEFT JOIN couriers c ON a.agent_id = c.agent_id 
             WHERE a.status = 'active'
@@ -46,6 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ORDER BY total_business DESC
         ");
         $agent_performance = $stmt->fetchAll();
+        
+        // Add Indian timezone to last activity
+        foreach ($agent_performance as &$agent) {
+            if ($agent['last_activity']) {
+                $lastActivity = new DateTime($agent['last_activity']);
+                $lastActivity->setTimezone(new DateTimeZone('Asia/Kolkata'));
+                $agent['last_activity_ist'] = $lastActivity->format('M d, Y H:i') . ' IST';
+            } else {
+                $agent['last_activity_ist'] = 'No activity';
+            }
+        }
         
         // Monthly revenue chart data (last 6 months)
         $stmt = $pdo->query("

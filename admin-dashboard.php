@@ -71,6 +71,9 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                 </ul>
             </nav>
             <div class="sidebar-footer">
+                <div class="realtime-indicator">
+                    <span>Live Updates</span>
+                </div>
                 <button onclick="logout()" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -81,6 +84,9 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
             <header class="dashboard-header">
                 <h1>Welcome, <?php echo htmlspecialchars($_SESSION['admin_username']); ?></h1>
                 <div class="header-actions">
+                    <div class="realtime-indicator">
+                        <span id="currentDateTime"></span>
+                    </div>
                     <button class="btn btn-primary" onclick="window.open('index.php', '_blank')">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </button>
@@ -235,7 +241,10 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
             <!-- Reports Section -->
             <section id="reports" class="dashboard-section">
                 <div class="section-header">
-                    <h2>Reports & Analytics</h2>
+                    <h2>Real-time Reports & Analytics</h2>
+                    <div class="realtime-indicator">
+                        <span>Live Data</span>
+                    </div>
                 </div>
                 <div class="stats-grid" style="margin-bottom: 2rem;">
                     <div class="stat-card">
@@ -281,7 +290,7 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                     </div>
                 </div>
                 <div class="report-card" style="margin-top: 2rem;">
-                    <h3>Agent Performance Details</h3>
+                    <h3>Real-time Agent Performance</h3>
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -290,7 +299,9 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                                 <th>Total Couriers</th>
                                 <th>Delivered</th>
                                 <th>Pending</th>
+                                <th>In Transit</th>
                                 <th>Total Business</th>
+                                <th>Last Activity</th>
                             </tr>
                         </thead>
                         <tbody id="agentPerformanceBody">
@@ -303,7 +314,10 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
             <!-- Update Courier Section -->
             <section id="update-courier" class="dashboard-section">
                 <div class="section-header">
-                    <h2>Update Courier Tracking</h2>
+                    <h2>Update Any Courier Tracking</h2>
+                    <div class="realtime-indicator">
+                        <span>Admin can update any courier</span>
+                    </div>
                 </div>
                 <div class="form-container">
                     <form id="updateCourierForm" class="courier-form">
@@ -338,7 +352,7 @@ $totalRevenue = $stmt->fetch()['total_revenue'] ?? 0;
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-update"></i> Update Courier
+                            <i class="fas fa-edit"></i> Update Any Courier
                         </button>
                     </form>
                 </div>

@@ -10,6 +10,23 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCouriers();
     loadDeliverySelfies();
     setupEventListeners();
+    updateDateTime();
+    
+    // Update time every second
+    setInterval(updateDateTime, 1000);
+    
+    // Auto-refresh data every 30 seconds for real-time updates
+    setInterval(function() {
+        if (currentSection === 'dashboard') {
+            loadRecentActivities();
+        } else if (currentSection === 'reports') {
+            loadReports();
+        } else if (currentSection === 'agents') {
+            loadAgents();
+        } else if (currentSection === 'couriers') {
+            loadCouriers();
+        }
+    }, 30000);
     
     // Add mobile menu button if needed
     if (window.innerWidth <= 768) {
@@ -21,6 +38,25 @@ function initializeDashboard() {
     showSection('dashboard');
     setupFormSubmissions();
     loadReports();
+}
+
+function updateDateTime() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    };
+    const dateTimeString = now.toLocaleString('en-IN', options);
+    const dateTimeElement = document.getElementById('currentDateTime');
+    if (dateTimeElement) {
+        dateTimeElement.textContent = `IST: ${dateTimeString}`;
+    }
 }
 
 function addMobileMenuButton() {
@@ -541,7 +577,9 @@ async function loadReports() {
                     <td>${agent.total_couriers}</td>
                     <td>${agent.delivered_count}</td>
                     <td>${agent.pending_count}</td>
+                    <td>${agent.in_transit_count || 0}</td>
                     <td>₹${parseFloat(agent.total_business).toLocaleString()}</td>
+                    <td><span class="realtime-indicator">Live</span></td>
                 </tr>
             `).join('');
             
@@ -699,6 +737,12 @@ async function handleUpdateCourier(e) {
         courier_status: formData.get('courier_status')
     };
     
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    submitBtn.disabled = true;
+    
     try {
         const response = await fetch('api/admin-update-courier.php', {
             method: 'POST',
@@ -711,15 +755,20 @@ async function handleUpdateCourier(e) {
         const result = await response.json();
         
         if (result.success) {
-            showAlert('Courier updated successfully!', 'success');
+            showAlert('Courier tracking updated successfully! (Admin Override)', 'success');
             e.target.reset();
             loadCouriers();
             loadRecentActivities();
+            loadReports(); // Refresh reports for real-time data
         } else {
             showAlert(result.message, 'error');
         }
     } catch (error) {
         showAlert('Failed to update courier. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     }
 }
 

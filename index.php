@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
     <title>FastTrack Courier Services - Professional Delivery Solutions</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Announcement Bar -->
@@ -55,8 +60,8 @@
     <main>
         <section id="home" class="hero">
             <div class="hero-content">
-                <h1>Professional Courier Services</h1>
-                <p>Fast, Reliable, and Secure Delivery Solutions Across India</p>
+                <h1>FastTrack Courier Services</h1>
+                <p>Fast, Reliable & Secure Delivery Solutions Across India</p>
                 <div class="hero-buttons">
                     <button class="cta-btn" onclick="scrollToSection('tracking')">
                         <i class="fas fa-search"></i> Track Package
@@ -81,7 +86,7 @@
             <div class="container">
                 <h2>Track Your Package</h2>
                 <div class="tracking-form">
-                    <input type="text" id="trackingId" placeholder="Enter Courier ID (e.g., RAJE1001)" required>
+                    <input type="text" id="trackingId" placeholder="Enter Courier ID (e.g., RAJE1001)" required autocomplete="off">
                     <button onclick="trackPackage()">
                         <i class="fas fa-search"></i> Track Now
                     </button>

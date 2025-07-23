@@ -64,18 +64,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         // Format activities
         $activities = array_slice(array_map(function($activity) {
+            // Get current Indian time
+            $timestamp = $activity['activity_type'] === 'courier_created' ? $activity['created_at'] : $activity['timestamp'];
+            $indianTime = new DateTime($timestamp);
+            $indianTime->setTimezone(new DateTimeZone('Asia/Kolkata'));
+            
             if ($activity['activity_type'] === 'courier_created') {
                 return [
                     'title' => 'New Courier Added',
                     'description' => "Courier {$activity['courier_id']} for {$activity['party_name']} from {$activity['from_city']} to {$activity['to_city']}",
-                    'timestamp' => date('M d, Y H:i', strtotime($activity['created_at'])),
+                    'timestamp' => $indianTime->format('M d, Y H:i') . ' IST',
                     'type' => 'courier'
                 ];
             } else {
                 return [
                     'title' => 'Tracking Updated',
                     'description' => "Courier {$activity['courier_id']} - {$activity['status']} at {$activity['location']} by {$activity['updated_by']}",
-                    'timestamp' => date('M d, Y H:i', strtotime($activity['timestamp'])),
+                    'timestamp' => $indianTime->format('M d, Y H:i') . ' IST',
                     'type' => 'tracking'
                 ];
             }

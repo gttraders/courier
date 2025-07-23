@@ -8,6 +8,19 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCities();
     loadRecentCouriers();
     setupEventListeners();
+    updateDateTime();
+    
+    // Update time every second
+    setInterval(updateDateTime, 1000);
+    
+    // Auto-refresh data every 30 seconds
+    setInterval(function() {
+        if (currentSection === 'dashboard') {
+            loadRecentCouriers();
+        } else if (currentSection === 'my-couriers') {
+            loadMyCouriers();
+        }
+    }, 30000);
     
     // Add mobile menu button if needed
     if (window.innerWidth <= 768) {
@@ -18,6 +31,25 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeDashboard() {
     showSection('dashboard');
     setupFormSubmissions();
+}
+
+function updateDateTime() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    };
+    const dateTimeString = now.toLocaleString('en-IN', options);
+    const dateTimeElement = document.getElementById('currentDateTime');
+    if (dateTimeElement) {
+        dateTimeElement.textContent = `IST: ${dateTimeString}`;
+    }
 }
 
 function addMobileMenuButton() {
@@ -352,6 +384,12 @@ async function handleUpdateTracking(e) {
     const formData = new FormData(e.target);
     const status = formData.get('status');
     
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    submitBtn.disabled = true;
+    
     // If marking as delivered, upload photo first
     if (status === 'Delivered') {
         const photoFile = formData.get('delivery_photo');
@@ -359,12 +397,16 @@ async function handleUpdateTracking(e) {
         
         if (!photoFile || !deliveryPerson) {
             showAlert('Delivery person name and selfie are required for delivered status', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
             return;
         }
         
         // Check file size (500KB limit)
         if (photoFile.size > 500 * 1024) {
             showAlert('Photo size must be less than 500KB', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
             return;
         }
         
@@ -384,10 +426,14 @@ async function handleUpdateTracking(e) {
             
             if (!photoResult.success) {
                 showAlert(photoResult.message, 'error');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
                 return;
             }
         } catch (error) {
             showAlert('Failed to upload delivery photo', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
             return;
         }
     }
@@ -412,7 +458,7 @@ async function handleUpdateTracking(e) {
         const result = await response.json();
         
         if (result.success) {
-            showAlert('Tracking updated successfully!', 'success');
+            showAlert('Courier tracking updated successfully! (Cross-agent update)', 'success');
             e.target.reset();
             handleTrackingStatusChange(); // Reset delivery sections
             loadRecentCouriers();
@@ -424,6 +470,10 @@ async function handleUpdateTracking(e) {
         }
     } catch (error) {
         showAlert('Failed to update tracking. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     }
 }
 
